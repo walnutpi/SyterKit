@@ -48,7 +48,7 @@
 #define CONFIG_SCP_FILENAME "scp.bin"
 #define CONFIG_SCP_LOAD_ADDR (0x48100000)
 
-#define CONFIG_EXTLINUX_FILENAME "extlinux/extlinux.conf"
+#define CONFIG_EXTLINUX_FILENAME "config.txt"
 #define CONFIG_EXTLINUX_LOAD_ADDR (0x40020000)
 
 #define CONFIG_PLATFORM_MAGIC "\0RAW\xbe\xe9\0\0"
@@ -291,27 +291,46 @@ static char *copy_until_newline_or_end(char *source) {
     dest[len] = '\0';
     return dest;
 }
+static char *get_opt_value(char *source, const char *target) {
+    printk_info("开始查找%s\n", target);
+    char *pos = strstr(source, target);
+    if (pos == NULL)
+        return NULL;
+    target = copy_until_newline_or_end(pos + 1 + strlen(target));
+    printk_info("查找到%s\n\n", target);
+    return target;
+}
 
 static void parse_extlinux_data(char *config, ext_linux_data_t *data) {
     char *start;
+    char *p;
 
-    start = find_substring(config, "label ");
-    data->os = copy_until_newline_or_end(start);
+    // start = find_substring(config, "label ");
+    // data->os = copy_until_newline_or_end(start);
+    data->os = "AvaotaOS";
 
-    start = find_substring(config, "kernel ");
-    data->kernel = copy_until_newline_or_end(start);
+    // start = find_substring(config, "kernel ");
+    // data->kernel = copy_until_newline_or_end(start);
+    data->kernel = "/Image";
 
     start = find_substring(config, "initrd ");
     data->initrd = copy_until_newline_or_end(start);
 
-    start = find_substring(config, "fdt ");
-    data->fdt = copy_until_newline_or_end(start);
+    data->fdt = strcat(get_opt_value(config, "fdtfile"), ".dtb");
 
+    get_opt_value(config, "rootdev");
     start = find_substring(config, "fdtoverlay ");
     data->dtbo = copy_until_newline_or_end(start);
 
-    start = find_substring(config, "append ");
-    data->append = copy_until_newline_or_end(start);
+
+    // char *append_str = "root=/dev/mmcblk0p2 console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 console=ttyAS0,115200 loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
+    char *append_str = "root=/dev/mmcblk0p2 console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 console=ttyAS0,115200 loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
+
+    // char *ccccc = strcat("root=", get_opt_value(config, "rootdev"));
+    printk_info("拼接ccc root=%s\n", get_opt_value(config, "rootdev"));
+
+    data->append = append_str;
+    // data->append = strcat(append_str,cmd_root) ;
 }
 
 static int fdt_pack_reg(const void *fdt, void *buf, uint64_t address, uint64_t size) {
@@ -821,8 +840,8 @@ int main(void) {
 
     /* flush buffer */
     LCD_ShowString(0, 0, "SyterKit Now Booting Linux", SPI_LCD_COLOR_GREEN, SPI_LCD_COLOR_BLACK, 12);
-    LCD_ShowString(0, 12, "Kernel Addr: 0x40800000", SPI_LCD_COLOR_GREEN, SPI_LCD_COLOR_BLACK, 12);
-    LCD_ShowString(0, 24, "DTB Addr: 0x40400000", SPI_LCD_COLOR_GREEN, SPI_LCD_COLOR_BLACK, 12);
+    // LCD_ShowString(0, 12, "Kernel Addr: 0x40800000", SPI_LCD_COLOR_GREEN, SPI_LCD_COLOR_BLACK, 12);
+    // LCD_ShowString(0, 24, "DTB Addr: 0x40400000", SPI_LCD_COLOR_GREEN, SPI_LCD_COLOR_BLACK, 12);
 
     clean_syterkit_data();
 
