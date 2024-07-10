@@ -291,14 +291,16 @@ static char *copy_until_newline_or_end(char *source) {
     dest[len] = '\0';
     return dest;
 }
-static char *get_opt_value(char *source, const char *target) {
-    printk_info("开始查找%s\n", target);
-    char *pos = strstr(source, target);
-    if (pos == NULL)
+static char *get_key_value(char *source, const char *key) {
+    printk_info("开始查找%s\n", key);
+    char *pos = strstr(source, key);
+    if (pos == NULL) {
+        printk_info("NULL\n", key);
         return NULL;
-    target = copy_until_newline_or_end(pos + 1 + strlen(target));
-    printk_info("查找到%s\n\n", target);
-    return target;
+    }
+    key = copy_until_newline_or_end(pos + strlen(key));
+    printk_info("查找到%s\n", key);
+    return key;
 }
 char *str_join(char *str1, char *str2) {
     char *new_str = smalloc(strlen(str1) + strlen(str2) + 1);
@@ -326,19 +328,35 @@ static void parse_extlinux_data(char *config, ext_linux_data_t *data) {
     start = find_substring(config, "initrd ");
     data->initrd = copy_until_newline_or_end(start);
 
-    data->fdt = strcat(get_opt_value(config, "fdtfile"), ".dtb");
+    data->fdt = strcat(get_key_value(config, "fdtfile="), ".dtb");
 
-    get_opt_value(config, "rootdev");
+    get_key_value(config, "rootdev");
     start = find_substring(config, "fdtoverlay ");
     data->dtbo = copy_until_newline_or_end(start);
 
 
     // char *append_str = "root=/dev/mmcblk0p2 console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 console=ttyAS0,115200 loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
-    char *append_str = " console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 console=ttyAS0,115200 loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
+    char *append_str = " console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0  loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
 
 
-    char *root = str_join_free_str2("root=", get_opt_value(config, "rootdev"));
-    data->append = str_join_free_str2( append_str,  str_join_free_str2(" ", root));
+    char *root = str_join_free_str2("root=", get_key_value(config, "rootdev="));
+    append_str = str_join_free_str2(append_str, str_join_free_str2(" ", root));
+
+    char *uart_str;
+    char *uart_value = get_key_value(config, "console_uart=uart");
+    if (uart_value == NULL) {
+        uart_str = "console=ttyAS0,115200";
+    } else if (*uart_value >= '0' && *uart_value < '9') {
+        char tmp[2];
+        tmp[0] = *uart_value;
+        tmp[1] = '\0';
+        uart_str = str_join_free_str2("console=ttyAS", str_join(tmp, ",115200"));
+    } else {
+        uart_str = "console=ttyAS0,115200";
+    }
+    append_str = str_join_free_str2(append_str, str_join_free_str2(" ", uart_str));
+
+    data->append = append_str;
 }
 
 static int fdt_pack_reg(const void *fdt, void *buf, uint64_t address, uint64_t size) {
