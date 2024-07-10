@@ -94,6 +94,7 @@ typedef struct ext_linux_data {
     char *kernel;
     char *initrd;
     char *fdt;
+    char *dtbo_prefix;
     char *dtbo;
     char *append;
 } ext_linux_data_t;
@@ -319,7 +320,7 @@ static void parse_extlinux_data(char *config, ext_linux_data_t *data) {
 
     // start = find_substring(config, "label ");
     // data->os = copy_until_newline_or_end(start);
-    data->os = "AvaotaOS";
+    data->os = "Walnutpi-2b";
 
     // start = find_substring(config, "kernel ");
     // data->kernel = copy_until_newline_or_end(start);
@@ -328,11 +329,9 @@ static void parse_extlinux_data(char *config, ext_linux_data_t *data) {
     start = find_substring(config, "initrd ");
     data->initrd = copy_until_newline_or_end(start);
 
-    data->fdt = strcat(get_key_value(config, "fdtfile="), ".dtb");
-
-    get_key_value(config, "rootdev");
-    start = find_substring(config, "fdtoverlay ");
-    data->dtbo = copy_until_newline_or_end(start);
+    data->fdt = str_join(get_key_value(config, "fdtfile="), ".dtb");
+    data->dtbo_prefix = get_key_value(config, "overlay_prefix=");
+    data->dtbo = get_key_value(config, "overlays=");
 
     // char *append_str = "root=/dev/mmcblk0p2 console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 console=ttyAS0,115200 loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
     char *append_str = "  earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
@@ -344,9 +343,8 @@ static void parse_extlinux_data(char *config, ext_linux_data_t *data) {
     append_str = str_join_free_str2(append_str, str_join_free_str2(" ", loglevel));
 
     char *display_bootinfo = get_key_value(config, "display_bootinfo=");
-    if( strcmp(display_bootinfo,"enable") == 0 )
-    {
-        append_str = str_join_free_str2( "console=tty0 ",append_str);
+    if (strcmp(display_bootinfo, "enable") == 0) {
+        append_str = str_join_free_str2("console=tty0 ", append_str);
     }
 
     char *uart_str;
@@ -509,16 +507,6 @@ static int load_extlinux(image_info_t *image, uint64_t dram_size) {
         }
     }
 
-    /* umount fs */
-    fret = f_mount(0, "", 0);
-    if (fret != FR_OK) {
-        printk_error("FATFS: unmount error %d\n", fret);
-        goto _error;
-    } else {
-        printk_debug("FATFS: unmount OK\n");
-    }
-    printk_debug("FATFS: done in %ums\n", time_ms() - start);
-
     /* Force image.of_dest to be a pointer to fdt_header structure */
     struct fdt_header *dtb_header = (struct fdt_header *) image->of_dest;
 
@@ -670,28 +658,80 @@ _add_dts_size:
 
     /* Check and load dtbo */
     if (data.dtbo != NULL) {
-        printk_info("FATFS: read %s addr=%x\n", data.dtbo, (uint32_t) image->of_overlay_dest);
-        ret = fatfs_loadimage(data.dtbo, image->of_overlay_dest);
-        if (ret) {
-            printk_warning("dtb overlay not find, overlay not applied.\n");
-            goto _error;
-        } else {
-            printk_info("dtbo load 0x%08x\n", image->of_overlay_dest);
+        char *tmp_str = smalloc(strlen(data.dtbo));
+        strcpy(tmp_str, data.dtbo);
+        char *end = tmp_str + strlen(tmp_str);
+
+        for (char *p = tmp_str; p <= end; p++) {
+            if (*p != ' ' && p < end) {
+                continue;
+            }
+            *p = '\0';
+            if (strlen(tmp_str) < 1) {
+                tmp_str = p + 1;
+                continue;
+            }
+            char *dtbo_file_name = str_join(tmp_str, ".dtbo");
+            dtbo_file_name = str_join_free_str2(data.dtbo_prefix, dtbo_file_name);
+            dtbo_file_name = str_join_free_str2("/overlays/", dtbo_file_name);
+            tmp_str = p + 1;
+
+            printk_info("FATFS: read %s addr=%x\n", dtbo_file_name, (uint32_t) image->of_overlay_dest);
+            ret = fatfs_loadimage(dtbo_file_name, image->of_overlay_dest);
+            if (ret) {
+                printk_warning("dtb overlay not find, overlay not applied.\n");
+                continue;
+            } else {
+                printk_info("dtbo load 0x%08x\n", image->of_overlay_dest);
+            }
+
+            if (!fdt_check_header(image->of_overlay_dest)) {
+                printk_warning("dtb overlay not valid, error = %s, overlay not applyed.\n", fdt_strerror(err));
+                goto _error;
+            } else {
+                ret = fdt_overlay_apply_verbose(image->of_dest, image->of_overlay_dest);
+                if (ret) {
+                    printk_warning("dtb overlay not success applied, overlay not applied.\n");
+                }
+            }
+
         }
 
-        if (!fdt_check_header(image->of_overlay_dest)) {
-            printk_warning("dtb overlay not valid, error = %s, overlay not applyed.\n", fdt_strerror(err));
-            goto _error;
-        } else {
-            ret = fdt_overlay_apply_verbose(image->of_dest, image->of_overlay_dest);
-            if (ret) {
-                printk_warning("dtb overlay not success applied, overlay not applied.\n");
-            }
-        }
+        sfree(tmp_str);
+        // printk_info("FATFS: read %s addr=%x\n", data.dtbo, (uint32_t) image->of_overlay_dest);
+
+        // ret = fatfs_loadimage(data.dtbo, image->of_overlay_dest);
+        // if (ret) {
+        //     printk_warning("dtb overlay not find, overlay not applied.\n");
+        //     goto _error;
+        // } else {
+        //     printk_info("dtbo load 0x%08x\n", image->of_overlay_dest);
+        // }
+
+        // if (!fdt_check_header(image->of_overlay_dest)) {
+        //     printk_warning("dtb overlay not valid, error = %s, overlay not applyed.\n", fdt_strerror(err));
+        //     goto _error;
+        // } else {
+        //     ret = fdt_overlay_apply_verbose(image->of_dest, image->of_overlay_dest);
+        //     if (ret) {
+        //         printk_warning("dtb overlay not success applied, overlay not applied.\n");
+        //     }
+        // }
     }
 
     err = 0;
 _error:
+
+    /* umount fs */
+    fret = f_mount(0, "", 0);
+    if (fret != FR_OK) {
+        printk_error("FATFS: unmount error %d\n", fret);
+        goto _error;
+    } else {
+        printk_debug("FATFS: unmount OK\n");
+    }
+    printk_debug("FATFS: done in %ums\n", time_ms() - start);
+
     return err;
 }
 
