@@ -336,11 +336,15 @@ static void parse_extlinux_data(char *config, ext_linux_data_t *data) {
 
 
     // char *append_str = "root=/dev/mmcblk0p2 console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 console=ttyAS0,115200 loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
-    char *append_str = " console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0  loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
+    char *append_str = " console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0   cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
 
 
     char *root = str_join_free_str2("root=", get_key_value(config, "rootdev="));
     append_str = str_join_free_str2(append_str, str_join_free_str2(" ", root));
+
+    char *loglevel = str_join_free_str2("loglevel=", get_key_value(config, "printk_level="));
+    append_str = str_join_free_str2(append_str, str_join_free_str2(" ", loglevel));
+
 
     char *uart_str;
     char *uart_value = get_key_value(config, "console_uart=uart");
