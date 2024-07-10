@@ -300,7 +300,17 @@ static char *get_opt_value(char *source, const char *target) {
     printk_info("查找到%s\n\n", target);
     return target;
 }
-
+char *str_join(char *str1, char *str2) {
+    char *new_str = smalloc(strlen(str1) + strlen(str2) + 1);
+    strcpy(new_str, str1);
+    strcpy(new_str + strlen(str1), str2);
+    return new_str;
+}
+char *str_join_free_str2(char *str1, char *str2) {
+    char *new_str = str_join(str1, str2);
+    sfree(str2);
+    return new_str;
+}
 static void parse_extlinux_data(char *config, ext_linux_data_t *data) {
     char *start;
     char *p;
@@ -324,13 +334,11 @@ static void parse_extlinux_data(char *config, ext_linux_data_t *data) {
 
 
     // char *append_str = "root=/dev/mmcblk0p2 console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 console=ttyAS0,115200 loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
-    char *append_str = "root=/dev/mmcblk0p2 console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 console=ttyAS0,115200 loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
+    char *append_str = " console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 console=ttyAS0,115200 loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
 
-    // char *ccccc = strcat("root=", get_opt_value(config, "rootdev"));
-    printk_info("拼接ccc root=%s\n", get_opt_value(config, "rootdev"));
 
-    data->append = append_str;
-    // data->append = strcat(append_str,cmd_root) ;
+    char *root = str_join_free_str2("root=", get_opt_value(config, "rootdev"));
+    data->append = str_join_free_str2( append_str,  str_join_free_str2(" ", root));
 }
 
 static int fdt_pack_reg(const void *fdt, void *buf, uint64_t address, uint64_t size) {
