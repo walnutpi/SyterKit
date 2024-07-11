@@ -685,8 +685,8 @@ _add_dts_size:
                 printk_info("dtbo load 0x%08x\n", image->of_overlay_dest);
             }
 
-            if (!fdt_check_header(image->of_overlay_dest)) {
-                printk_warning("dtb overlay not valid, error = %s, overlay not applyed.\n", fdt_strerror(err));
+            if (fdt_check_header(image->of_overlay_dest) < 0) {
+                printk_warning("dtb overlay not valid, error = %s, overlay not applyed.\n",  fdt_strerror(fdt_check_header(image->of_overlay_dest)));
                 goto _error;
             } else {
                 ret = fdt_overlay_apply_verbose(image->of_dest, image->of_overlay_dest);
@@ -698,25 +698,6 @@ _add_dts_size:
         }
 
         sfree(tmp_str);
-        // printk_info("FATFS: read %s addr=%x\n", data.dtbo, (uint32_t) image->of_overlay_dest);
-
-        // ret = fatfs_loadimage(data.dtbo, image->of_overlay_dest);
-        // if (ret) {
-        //     printk_warning("dtb overlay not find, overlay not applied.\n");
-        //     goto _error;
-        // } else {
-        //     printk_info("dtbo load 0x%08x\n", image->of_overlay_dest);
-        // }
-
-        // if (!fdt_check_header(image->of_overlay_dest)) {
-        //     printk_warning("dtb overlay not valid, error = %s, overlay not applyed.\n", fdt_strerror(err));
-        //     goto _error;
-        // } else {
-        //     ret = fdt_overlay_apply_verbose(image->of_dest, image->of_overlay_dest);
-        //     if (ret) {
-        //         printk_warning("dtb overlay not success applied, overlay not applied.\n");
-        //     }
-        // }
     }
 
     err = 0;
