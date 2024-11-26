@@ -661,6 +661,7 @@ _add_dts_size:
         char *tmp_str = smalloc(strlen(data.dtbo));
         strcpy(tmp_str, data.dtbo);
         char *end = tmp_str + strlen(tmp_str);
+        fdt_set_totalsize(image->of_dest, fdt_totalsize(image->of_dest) * 2);
 
         for (char *p = tmp_str; p <= end; p++) {
             if (*p != ' ' && p < end) {
@@ -686,7 +687,7 @@ _add_dts_size:
             }
 
             if (fdt_check_header(image->of_overlay_dest) < 0) {
-                printk_warning("dtb overlay not valid, error = %s, overlay not applyed.\n",  fdt_strerror(fdt_check_header(image->of_overlay_dest)));
+                printk_warning("dtb overlay not valid, error = %s, overlay not applyed.\n", fdt_strerror(fdt_check_header(image->of_overlay_dest)));
                 goto _error;
             } else {
                 ret = fdt_overlay_apply_verbose(image->of_dest, image->of_overlay_dest);
@@ -694,7 +695,6 @@ _add_dts_size:
                     printk_warning("dtb overlay not success applied, overlay not applied.\n");
                 }
             }
-
         }
 
         sfree(tmp_str);
