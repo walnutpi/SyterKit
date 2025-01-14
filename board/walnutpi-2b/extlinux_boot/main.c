@@ -615,21 +615,21 @@ static int load_extlinux(image_info_t *image, uint64_t dram_size) {
     fdt_setprop_u32(image->of_dest, dram_node, dram_para_name[0], dram_para[0]);
     fdt_setprop_u32(image->of_dest, dram_node, dram_para_name[1], dram_para[24]);
 
-    /* Append bootargs mac address */
-    uint32_t chip_sid[4];
-    chip_sid[0] = read32(SUNXI_SID_SRAM_BASE + 0x0);
-    chip_sid[1] = read32(SUNXI_SID_SRAM_BASE + 0x4);
-    chip_sid[2] = read32(SUNXI_SID_SRAM_BASE + 0x8);
-    chip_sid[3] = read32(SUNXI_SID_SRAM_BASE + 0xc);
+    // /* Append bootargs mac address */
+    // uint32_t chip_sid[4];
+    // chip_sid[0] = read32(SUNXI_SID_SRAM_BASE + 0x0);
+    // chip_sid[1] = read32(SUNXI_SID_SRAM_BASE + 0x4);
+    // chip_sid[2] = read32(SUNXI_SID_SRAM_BASE + 0x8);
+    // chip_sid[3] = read32(SUNXI_SID_SRAM_BASE + 0xc);
 
-    char mac_address_str[18];
-    char *mac0_address = get_mac_address_from_sid(chip_sid, mac_address_str);
-    strcat(bootargs, " mac0_addr=");
-    strcat(bootargs, mac0_address);
-    chip_sid[2]++;
-    char *mac1_address = get_mac_address_from_sid(chip_sid, mac_address_str);
-    strcat(bootargs, " mac1_addr=");
-    strcat(bootargs, mac1_address);
+    // char mac_address_str[18];
+    // char *mac0_address = get_mac_address_from_sid(chip_sid, mac_address_str);
+    // strcat(bootargs, " mac0_addr=");
+    // strcat(bootargs, mac0_address);
+    // chip_sid[2]++;
+    // char *mac1_address = get_mac_address_from_sid(chip_sid, mac_address_str);
+    // strcat(bootargs, " mac1_addr=");
+    // strcat(bootargs, mac1_address);
 
 _add_dts_size:
     /* Modify bootargs string */
