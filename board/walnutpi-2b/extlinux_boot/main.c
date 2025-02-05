@@ -293,14 +293,14 @@ static char *copy_until_newline_or_end(char *source) {
     return dest;
 }
 static char *get_key_value(char *source, const char *key) {
-    printk_info("开始查找%s\n", key);
+    printk_info("%s\n", key);
     char *pos = strstr(source, key);
     if (pos == NULL) {
         printk_info("NULL\n", key);
         return NULL;
     }
     key = copy_until_newline_or_end(pos + strlen(key));
-    printk_info("查找到%s\n", key);
+    printk_info("%s\n", key);
     return key;
 }
 char *str_join(char *str1, char *str2) {
@@ -752,7 +752,7 @@ int main(void) {
     arm32_dcache_enable();
     arm32_icache_enable();
 
-    show_banner();
+    // show_banner();
 
     rtc_set_vccio_det_spare();
 

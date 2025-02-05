@@ -270,7 +270,7 @@ void show_chip() {
     chip_sid[2] = read32(SUNXI_SID_SRAM_BASE + 0x8);
     chip_sid[3] = read32(SUNXI_SID_SRAM_BASE + 0xc);
 
-    printk_info("Model: AvaotaSBC Avaota A1 board.\n");
+    printk_info("Model: Walnutpi 2b.\n");
     printk_info("Core: Arm Octa-Core Cortex-A55 v65 r2p0\n");
     printk_info("Chip SID = %08x%08x%08x%08x\n", chip_sid[0], chip_sid[1], chip_sid[2], chip_sid[3]);
 
