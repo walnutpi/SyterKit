@@ -347,6 +347,11 @@ static void parse_extlinux_data(char *config, ext_linux_data_t *data) {
         append_str = str_join_free_str2("console=tty0 ", append_str);
     }
 
+    char *hdmi_force_hotplug = get_key_value(config, "hdmi_force_hotplug=");
+    if (strcmp(hdmi_force_hotplug, "1") == 0) {
+        append_str = str_join_free_str2("hdmi_force_hotplug=1 ", append_str);
+    }
+
     char *uart_str;
     char *uart_value = get_key_value(config, "console_uart=uart");
     if (uart_value == NULL) {
