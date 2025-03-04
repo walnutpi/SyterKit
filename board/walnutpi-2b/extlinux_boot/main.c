@@ -331,7 +331,7 @@ static void parse_extlinux_data(char *config, ext_linux_data_t *data) {
 
     data->fdt = str_join(get_key_value(config, "fdtfile="), ".dtb");
     data->dtbo_prefix = str_join(get_key_value(config, "overlay_prefix="), "-");
-    data->dtbo = get_key_value(config, "overlays=");
+    // data->dtbo = get_key_value(config, "overlays=");
 
     // char *append_str = "root=/dev/mmcblk0p2 console=tty0 earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 console=ttyS0,115200 loglevel=5 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0";
     char *append_str = "  earlycon=uart8250,mmio32,0x02500000 clk_ignore_unused initcall_debug=0 cma=64M init=/sbin/init rw fsck.fix=yes fsck.repair=yes net.ifnames=0 apparmor=1 security=apparmor";
